@@ -138,11 +138,31 @@ cd ./oran-sc-ric
 docker compose up
 ```
 
+The output should be:
+
+```console
+ric_submgr          | RMR is ready now ...
+```
+
 3. Start gnb
 
 ```bash
 cd  ./srsRAN_Project/build/apps/gnb/
 sudo ./gnb -c gnb_zmq.yaml 
+```
+
+The output should be similar to:
+
+```console
+--== srsRAN gNB (commit 0b2702cca) ==--
+
+Connecting to AMF on 10.53.1.2:38412
+Available radio types: zmq.
+Connecting to NearRT-RIC on 127.0.0.1:36421
+Cell pci=1, bw=10 MHz, dl_arfcn=368500 (n3), dl_freq=1842.5 MHz, dl_ssb_arfcn=368410, ul_freq=1747.5 MHz
+
+==== gNodeB started ===
+Type <t> to view trace
 ```
 
 The gNB should connect to both the core network and the RIC.  
@@ -159,4 +179,31 @@ sudo ip netns add ue3
 sudo ./srsue ./ue1_zmq.conf
 sudo ./srsue ./ue2_zmq.conf
 sudo ./srsue ./ue3_zmq.conf
+```
+
+If srsUE connects successfully to the network, the following (or similar) should be displayed on the console:
+```console
+Built in Release mode using commit fa56836b1 on branch master.
+
+Opening 1 channels in RF device=zmq with args=tx_port=tcp://127.0.0.1:2001,rx_port=tcp://127.0.0.1:2000,base_srate=11.52e6
+Supported RF device list: UHD zmq file
+CHx base_srate=11.52e6
+Current sample rate is 1.92 MHz with a base rate of 11.52 MHz (x6 decimation)
+CH0 rx_port=tcp://127.0.0.1:2000
+CH0 tx_port=tcp://127.0.0.1:2001
+Current sample rate is 11.52 MHz with a base rate of 11.52 MHz (x1 decimation)
+Current sample rate is 11.52 MHz with a base rate of 11.52 MHz (x1 decimation)
+Waiting PHY to initialize ... done!
+Attaching UE...
+Random Access Transmission: prach_occasion=0, preamble_index=0, ra-rnti=0x39, tti=334
+Random Access Complete.     c-rnti=0x4601, ta=0
+RRC Connected
+PDU Session Establishment successful. IP: 10.45.1.2
+RRC NR reconfiguration successful.
+```
+
+5. Run GRC flowgraph
+
+```bash
+sudo gnuradio-companion ./multi_ue_scenario.grc
 ```
