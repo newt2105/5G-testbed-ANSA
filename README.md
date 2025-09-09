@@ -93,16 +93,16 @@ To apply network slicing, you have to change some file:
 amf:
 ...
  plmn_support:
- - plmn_id:
- mcc: 001
- mnc: 01
- s_nssai:
- - sst: 1
- sd: 000001
- - sst: 1
- sd: 000002
- - sst: 1
- sd: 000003 
+    - plmn_id:
+        mcc: 001
+        mnc: 01
+      s_nssai:
+        - sst: 1
+          sd: 000001
+        - sst: 1
+          sd: 000002
+        - sst: 1
+          sd: 000003 
 ```
 
 2. `czmq/srsRAN_4G/srsue/src/stack/upper/nas_5g.cc`
