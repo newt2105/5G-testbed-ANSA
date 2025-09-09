@@ -35,7 +35,7 @@ sudo apt-get install gnuradio
 
 We set up an end-to-end 5G network using the **srsRAN_Project gNB** [[docs](https://docs.srsran.com/projects/project/en/latest/),[code](https://github.com/srsran/srsRAN_Project/)] (that is equipped with an E2 agent) and **srsUE** from **srsRAN-4g** project [[docs](https://docs.srsran.com/projects/4g/en/latest/),[code](https://github.com/srsran/srsRAN_4G)]. Please follow the official installation guidelines and remember to compile both projects with **ZeroMQ** support.
 
-We follow this [application note](https://docs.srsran.com/projects/project/en/latest/tutorials/source/near-rt-ric/source/). To this end, we execute gNB and srsUE with the configs provided in the `./e2-agents/srsRAN` directory (gNB config differs only with the IP address of the RIC compared to the config from the tutorial). Note that, we use ZMQ-based RF devices for emulation of the wireless transmission between gNB and UE, therefore the entire RAN setup can be run on a single host machine.
+We follow this [application note](https://docs.srsran.com/projects/project/en/latest/tutorials/source/near-rt-ric/source/). To this end, we execute gNB and srsUE with the configs provided in the `./config` directory (gNB config differs only with the IP address of the RIC compared to the config from the tutorial). Note that, we use ZMQ-based RF devices for emulation of the wireless transmission between gNB and UE, therefore the entire RAN setup can be run on a single host machine.
 
 Use this command to install srsRAN_Project (include Open5gs):
 
@@ -206,8 +206,20 @@ RRC Connected
 PDU Session Establishment successful. IP: 10.45.1.2
 RRC NR reconfiguration successful.
 ```
+## xApp
+We provide some xapp [xApps](xApps/python/) designed to monitor any measurement metric exposed by an `E2SM_KPM` service module within an E2 Agent.  These xApps function by sending a `RIC Subscription Request` message, which includes a `RIC Subscription Details` Information Element crafted following the `E2SM_KPM` definition. Subsequently, they receive `RIC Indication Messages` containing measurement data adhering to the `E2SM_KPM_IndicationMessage` definition. In addition, we provide one example xApp that demonstrates the usage of the `E2SM_RC` service module.
+
+One of the custom xApp is:
+The [mon_xapp_db](xApps/python/mon_xapp_db.py) erves as a comprehensive E2SM-KPM monitor, include send the data to the `InfluxDB`
 
 ## Visualize data on Grafana
+
+Run the [mon_xapp_db](xApps/python/mon_xapp_db.py) using this command:
+```bash
+sudo docker compose exec python_xapp_runner python3 ./test_db.py  
+```
+**Note:** If you have some problem/error about library, just `sudo docker compose exec python_xapp_runner bash
+` and `pip install` the needed library.
 
 Access http://localhost:3000/
 Username/password: admin/admin
@@ -225,3 +237,4 @@ Click Save and Test
 
 ### Create new dashboard:
 Access Dashboard -> New -> Import, copy file dashboard JSON `./JSON-dashboard/dashboard.json` to it.
+
