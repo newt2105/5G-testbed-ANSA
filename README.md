@@ -74,7 +74,7 @@ cmake ../
 ### 4. ORAN SC RIC
 
 ```bash
-git clone https://github.com/newt2105/osc-ric-ANSA.git 
+git clone https://github.com/newt2105/5G-testbed-ANSA.git
 ```
 
 ## Configuration
