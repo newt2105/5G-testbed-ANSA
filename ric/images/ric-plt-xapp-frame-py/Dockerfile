@@ -35,7 +35,14 @@ RUN chmod -R 755 /usr/local/lib/librmr_si.so
 RUN chmod -R 755 /usr/local/lib/libriclibe2ap.so
 
 # Install required Python modules
-RUN pip install --upgrade pip && pip install certifi six python_dateutil setuptools urllib3 logger requests inotify_simple mdclogpy google-api-python-client msgpack ricsdl asn1tools
+# RUN pip install --upgrade pip && pip install certifi six python_dateutil setuptools urllib3 logger requests inotify_simple mdclogpy google-api-python-client msgpack ricsdl asn1tools 
+
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install certifi six python_dateutil setuptools urllib3 logger requests inotify_simple mdclogpy \
+               google-api-python-client msgpack ricsdl asn1tools && \
+    pip install torch==2.4.1+cpu --index-url https://download.pytorch.org/whl/cpu && \
+    pip install stable-baselines3[extra]==2.4.1
+               
 
 RUN mkdir -p /opt/xApps && chmod -R 755 opt/xApps
 RUN mkdir -p /opt/ric/config && chmod -R 755 /opt/ric/config

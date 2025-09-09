@@ -207,3 +207,21 @@ PDU Session Establishment successful. IP: 10.45.1.2
 RRC NR reconfiguration successful.
 ```
 
+## Visualize data on Grafana
+
+Access http://localhost:3000/
+Username/password: admin/admin
+```yaml
+Choose Connection -> Data Source
+Input: InfluxDB
+Query languge: Flux
+URL: http://influxdb:8086/
+Organization: srs
+Token: 05bc59413b7d5457d181ccf20f9fda15693f81b068d70396cc183081b264f3b
+Default bucket: srsran
+```
+
+Click Save and Test
+
+### Create new dashboard:
+Access Dashboard -> New -> Import, copy file dashboard JSON `./JSON-dashboard/dashboard.json` to it.

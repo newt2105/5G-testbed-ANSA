@@ -25,12 +25,16 @@ class MyXapp(xAppBase):
         granulPeriod = meas_data.get("granulPeriod", None)
         if granulPeriod is not None:
             print("-granulPeriod: {}".format(granulPeriod))
+        
+        print("pre")
 
         if kpm_report_style in [1,2]:
+            print("alo")
             for metric_name, value in meas_data["measData"].items():
                 print("--Metric: {}, Value: {}".format(metric_name, value))
 
         else:
+            print("alo2")
             for ue_id, ue_meas_data in meas_data["ueMeasData"].items():
                 print("--UE_id: {}".format(ue_id))
                 granulPeriod = ue_meas_data.get("granulPeriod", None)
@@ -50,7 +54,7 @@ class MyXapp(xAppBase):
 
         # use always the same subscription callback, but bind kpm_report_style parameter
         subscription_callback = lambda agent, sub, hdr, msg: self.my_subscription_callback(agent, sub, hdr, msg, kpm_report_style, None)
-
+        print("alooooooo")
         if (kpm_report_style == 1):
             print("Subscribe to E2 node ID: {}, RAN func: e2sm_kpm, Report Style: {}, metrics: {}".format(e2_node_id, kpm_report_style, metric_names))
             self.e2sm_kpm.subscribe_report_service_style_1(e2_node_id, report_period, metric_names, granul_period, subscription_callback)

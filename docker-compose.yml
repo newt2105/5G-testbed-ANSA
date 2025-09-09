@@ -149,6 +149,7 @@ services:
   python_xapp_runner:
     container_name: python_xapp_runner
     hostname: python_xapp_runner
+    # image: xapp-stable-baselines3:2.4.1
     image: python_xapp_runner:${SC_RIC_VERSION}
     build:
       context: ./ric/images/ric-plt-xapp-frame-py
