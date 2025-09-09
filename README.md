@@ -119,6 +119,8 @@ Comment these line:
 ... 
 ```
 
+3. Move 3 files in `open5gs` to `srsRAN_Project/docker/open5gs`
+
 ## Running the network
 
 1. Start Open5gs
@@ -126,6 +128,8 @@ Comment these line:
 ```bash
 docker compose up --build 5gc
 ```
+
+After that, you should check the information of each UE on  http://localhost:9999/
 
 2. Start Oran-sc-ric:
 
