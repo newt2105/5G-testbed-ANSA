@@ -119,4 +119,40 @@ Comment these line:
 ... 
 ```
 
+## Running the network
 
+1. Start Open5gs
+
+```bash
+docker compose up --build 5gc
+```
+
+2. Start Oran-sc-ric:
+
+```bash
+cd ./oran-sc-ric
+docker compose up
+```
+
+3. Start gnb
+
+```bash
+cd  ./srsRAN_Project/build/apps/gnb/
+sudo ./gnb -c gnb_zmq.yaml 
+```
+
+The gNB should connect to both the core network and the RIC.  
+**Note:** The RIC uses 60s time-to-wait. Therefore, after disconnecting from RIC, an E2 agent (inside gNB) has to wait 60s before trying to connect again. Otherwise, the RIC sends an `E2 SETUP FAILURE` message and gNB is not connected to the RIC.
+
+4. Start UEs
+
+```bash
+cd ./srsRAN_4G/build/srsue/src
+sudo ip netns add ue1 
+sudo ip netns add ue2 
+sudo ip netns add ue3
+
+sudo ./srsue ./ue1_zmq.conf
+sudo ./srsue ./ue2_zmq.conf
+sudo ./srsue ./ue3_zmq.conf
+```
