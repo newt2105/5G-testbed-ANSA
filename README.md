@@ -181,6 +181,11 @@ sudo ./srsue ./ue2_zmq.conf
 sudo ./srsue ./ue3_zmq.conf
 ```
 
+Run GRC flowgraph:
+```bash
+sudo gnuradio-companion ./multi_ue_scenario.grc
+```
+
 If srsUE connects successfully to the network, the following (or similar) should be displayed on the console:
 ```console
 Built in Release mode using commit fa56836b1 on branch master.
@@ -202,8 +207,3 @@ PDU Session Establishment successful. IP: 10.45.1.2
 RRC NR reconfiguration successful.
 ```
 
-5. Run GRC flowgraph
-
-```bash
-sudo gnuradio-companion ./multi_ue_scenario.grc
-```
