@@ -180,6 +180,41 @@ services:
       ric_network:
         ipv4_address: ${XAPP_PY_RUNNER_IP:-10.0.2.20}
 
+  influxdb:
+    container_name: influxdb
+    image: influxdb:2.7
+    ports:
+      - "8086:8086"
+    environment:
+      - INFLUXDB_ADMIN_USER=admin
+      - INFLUXDB_ADMIN_PASSWORD=admin123
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=admin123
+      - DOCKER_INFLUXDB_INIT_ORG=srs
+      - DOCKER_INFLUXDB_INIT_BUCKET=srsran
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=605bc59413b7d5457d181ccf20f9fda15693f81b068d70396cc183081b264f3b
+    volumes:
+      - influxdb_data:/var/lib/influxdb2
+    networks:
+      ric_network:
+        ipv4_address: 10.0.2.30
+  grafana3:
+    image: grafana/grafana-oss:latest
+    container_name: grafana3
+    ports:
+      - "3000:3000"
+    networks:
+      ric_network:
+        ipv4_address: 10.0.2.40
+    volumes:
+      - grafana3_data:/var/lib/grafana
+volumes:
+  influxdb_data:
+    driver: local
+  grafana3_data:
+    driver: local
+
 networks:
   ric_network:
     ipam:
