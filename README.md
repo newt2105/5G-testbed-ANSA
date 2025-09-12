@@ -1,7 +1,7 @@
  # 5G testbed ANSA LAB
 
  This repository provides the instruction to deploy a 5G architechture using Open5GS, srsRAN_Project and ORAN SC RIC.
-  ![Mô tả](fig/5garchi%20(1).png)
+  ![5G Architechture for testbed](fig/5garchi%20(1).png)
  ## Quick start
  ### 1. Build Preparation
 
