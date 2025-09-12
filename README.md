@@ -240,6 +240,11 @@ Default bucket: srsran
 
 Click Save and Test
 
+The visualization of data on Grafana look like below:
+
+![5G Architechture for testbed](fig/Screenshot%20from%202025-09-12%2015-39-27.png)
+![5G Architechture for testbed](fig/Screenshot%20from%202025-09-12%2015-39-47.png)
+
 ### Create new dashboard:
 Access Dashboard -> New -> Import, copy file dashboard JSON `./JSON-dashboard/dashboard.json` to it.
 
