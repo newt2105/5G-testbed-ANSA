@@ -183,6 +183,11 @@ sudo ./srsue ./ue2_zmq.conf
 sudo ./srsue ./ue3_zmq.conf
 ```
 
+OR run this command:
+```bash
+sudo bash run_ues.sh
+```
+
 Run GRC flowgraph:
 ```bash
 sudo gnuradio-companion ./multi_ue_scenario.grc
@@ -210,7 +215,11 @@ RRC NR reconfiguration successful.
 ```
 
 ## IP Traffic with ping
-Coming soon
+To ping UEs to the core, run this command:
+
+```bash
+sudo bash traffic.sh
+```
 ## xApp
 We provide some xapp [xApps](xApps/python/) designed to monitor any measurement metric exposed by an `E2SM_KPM` service module within an E2 Agent.  These xApps function by sending a `RIC Subscription Request` message, which includes a `RIC Subscription Details` Information Element crafted following the `E2SM_KPM` definition. Subsequently, they receive `RIC Indication Messages` containing measurement data adhering to the `E2SM_KPM_IndicationMessage` definition. In addition, we provide one example xApp that demonstrates the usage of the `E2SM_RC` service module.
 
