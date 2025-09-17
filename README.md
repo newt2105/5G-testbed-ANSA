@@ -15,7 +15,7 @@ chmod +x setup.sh
 ./setup.sh
 ```
 
-1.1. Install ZeroMQ
+1. Install ZeroMQ
 
 ```bash
 git clone https://github.com/zeromq/czmq.git
@@ -26,7 +26,7 @@ make
 sudo make install
 sudo ldconfig
 ```
-1.2. GNU-Radio Companion
+2. GNU-Radio Companion
 This will allow connect multiple UEs, Please install GNU-Radio Companion following the instructions here:
 
 ```bash
