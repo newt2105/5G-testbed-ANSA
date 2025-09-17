@@ -103,7 +103,10 @@ class MonRcApp(xAppBase):
 
 if __name__ == '__main__':
     # Create the xApp
-    xApp = MonRcApp()
+    q = queue.Queue()
+    log_file = "/tmp/kpm_log.csv"   # hoặc đường dẫn bạn muốn
+
+    xApp = MonRcApp(q, log_file, debug=True)   # truyền đủ tham số
     ran_func_id = 2
     xApp.e2sm_kpm.set_ran_func_id(ran_func_id)
 

@@ -51,7 +51,7 @@ class xAppEnv(gym.Env):
         self.xapp_thread.start()
 
     def _process_actions(self):
-        if self.current_episode != 0 and self.current_episode % 50 == 0:
+        if self.current_episode != 0 and self.current_episode % 1 == 0:
             if self.debug:
                 print(f"Updating {self.log_dir}/action.logs")
                 print(self.action_history)
@@ -77,6 +77,7 @@ class xAppEnv(gym.Env):
 
     def step(self, action):
         # Action is choosing a pair of prbs and then applying it
+        print("action: ", action)
         self.action_history[action] += 1
         if self.prbs != self.prb_pairs[action].tolist():
             self.prbs = self.prb_pairs[action].tolist()
@@ -91,9 +92,11 @@ class xAppEnv(gym.Env):
             except:
                 break
         kpms = self.kpm_queue.get()
+        print("kpms: ", kpms)
 
         # Get new state
         self.state = self._decode_kpms(kpms, self.max_throughput, self.total_prbs)
+        print("state: ", self.state)
 
         # Reward: Total Throughput + Jain's Fairness Index
         throughputs = [float(x) for x in kpms.split(';')[:self.ues]]
@@ -161,8 +164,8 @@ if __name__ == "__main__":
     # 150 steps -> 7.5s
     # with 150ms - 1000 steps takes 150 seconds, 2.5min
     algorithm = "DQN"
-    iterations = 200
-    steps = 512
+    iterations = 1
+    steps = 10
     # In the format: Algorithm-ActivationFunction-p<pi layers>-v<vf layers>
     config_name = f"{algorithm}-Tanh-64x64"
     # Logs
