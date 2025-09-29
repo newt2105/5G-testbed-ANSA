@@ -226,7 +226,7 @@ We provide some xapp [xApps](xApps/python/) designed to monitor any measurement 
 One of the custom xApp is:
 The [mon_xapp_db](xApps/python/mon_xapp_db.py) erves as a comprehensive E2SM-KPM monitor, include send the data to the `InfluxDB`
 
-The [xapp_env.py](xApps/python/xapp_env.py) is the RL based xAxpp to control the resource block for slices, before run this app, you need to apply the patch (patches/srsRAN_Project) to add more measured metrics, just copy them and rebuild srsRAN_Project, and you need to run ./traffic2UE.sh to run only 2 UEs.
+The [xapp_env.py](xApps/python/xapp_env.py) is the RL based xAxpp to control the resource block for slices, before run this app, you need to apply the patch (patches/srsRAN_Project) to add more measured metrics, just copy them and rebuild srsRAN_Project, and you need to run (traffic2UE.sh) to run only 2 UEs.
 ## Visualize data on Grafana
 
 Run the [mon_xapp_db](xApps/python/mon_xapp_db.py) using this command:
