@@ -1,0 +1,148 @@
+diff --git a/lib/e2/e2sm/e2sm_kpm/e2sm_kpm_du_meas_provider_impl.cpp b/lib/e2/e2sm/e2sm_kpm/e2sm_kpm_du_meas_provider_impl.cpp
+index 53aabba0c1..d4cc20c3d5 100644
+--- a/lib/e2/e2sm/e2sm_kpm/e2sm_kpm_du_meas_provider_impl.cpp
++++ b/lib/e2/e2sm/e2sm_kpm/e2sm_kpm_du_meas_provider_impl.cpp
+@@ -42,6 +42,16 @@ e2sm_kpm_du_meas_provider_impl::e2sm_kpm_du_meas_provider_impl(srs_du::f1ap_ue_i
+       e2sm_kpm_supported_metric_t{
+           NO_LABEL, E2_NODE_LEVEL | UE_LEVEL, true, &e2sm_kpm_du_meas_provider_impl::get_prb_avail_dl});
+
++  // Custom McsDl, OkDl, NokDl
++  supported_metrics.emplace(
++      "McsDl", e2sm_kpm_supported_metric_t{NO_LABEL, E2_NODE_LEVEL | UE_LEVEL, true, &e2sm_kpm_du_meas_provider_impl::get_mcs_dl});
++
++  supported_metrics.emplace(
++      "OkDl", e2sm_kpm_supported_metric_t{NO_LABEL, E2_NODE_LEVEL | UE_LEVEL, true, &e2sm_kpm_du_meas_provider_impl::get_ok_dl});
++
++  supported_metrics.emplace(
++      "NokDl", e2sm_kpm_supported_metric_t{NO_LABEL, E2_NODE_LEVEL | UE_LEVEL, true, &e2sm_kpm_du_meas_provider_impl::get_nok_dl});
++
+   supported_metrics.emplace(
+       "RRU.PrbAvailUl",
+       e2sm_kpm_supported_metric_t{
+@@ -395,6 +405,112 @@ bool e2sm_kpm_du_meas_provider_impl::get_prb_avail_dl(const asn1::e2sm::label_in
+   return meas_collected;
+ }
+ 
++// Custom McsDl
++bool e2sm_kpm_du_meas_provider_impl::get_mcs_dl(const asn1::e2sm::label_info_list_l        label_info_list,
++                                              const std::vector<asn1::e2sm::ue_id_c>&      ues,
++                                              const std::optional<asn1::e2sm::cgi_c>       cell_global_id,
++                                              std::vector<asn1::e2sm::meas_record_item_c>& items)
++{
++  bool meas_collected = false;
++  if (last_ue_metrics.empty()) {
++    return handle_no_meas_data_available(ues, items, asn1::e2sm::meas_record_item_c::types::options::integer);
++  }
++  if ((label_info_list.size() > 1 or
++       (label_info_list.size() == 1 and not label_info_list[0].meas_label.no_label_present))) {
++    logger.debug("Metric: McsDl supports only NO_LABEL label.");
++    return meas_collected;
++  }
++
++  if (ues.empty()) {
++    meas_record_item_c meas_record_item;
++    meas_record_item.set_integer() = 0;
++    items.push_back(meas_record_item);
++    meas_collected = true;
++  }
++
++  for (auto& ue : ues) {
++    gnb_cu_ue_f1ap_id_t gnb_cu_ue_f1ap_id = int_to_gnb_cu_ue_f1ap_id(ue.gnb_du_ue_id().gnb_cu_ue_f1ap_id);
++    uint32_t            ue_idx            = f1ap_ue_id_provider.get_ue_index(gnb_cu_ue_f1ap_id);
++    meas_record_item_c  meas_record_item;
++    meas_record_item.set_integer() = int(last_ue_metrics[ue_idx].dl_mcs.to_uint());
++    items.push_back(meas_record_item);
++    meas_collected = true;
++  }
++
++  return meas_collected;
++}
++
++// Custom OkDl
++bool e2sm_kpm_du_meas_provider_impl::get_ok_dl(const asn1::e2sm::label_info_list_l        label_info_list,
++                                              const std::vector<asn1::e2sm::ue_id_c>&      ues,
++                                              const std::optional<asn1::e2sm::cgi_c>       cell_global_id,
++                                              std::vector<asn1::e2sm::meas_record_item_c>& items)
++{
++  bool meas_collected = false;
++  if (last_ue_metrics.empty()) {
++    return handle_no_meas_data_available(ues, items, asn1::e2sm::meas_record_item_c::types::options::integer);
++  }
++  if ((label_info_list.size() > 1 or
++       (label_info_list.size() == 1 and not label_info_list[0].meas_label.no_label_present))) {
++    logger.debug("Metric: OkDl supports only NO_LABEL label.");
++    return meas_collected;
++  }
++
++  if (ues.empty()) {
++    meas_record_item_c meas_record_item;
++    meas_record_item.set_integer() = 0;
++    items.push_back(meas_record_item);
++    meas_collected = true;
++  }
++
++  for (auto& ue : ues) {
++    gnb_cu_ue_f1ap_id_t gnb_cu_ue_f1ap_id = int_to_gnb_cu_ue_f1ap_id(ue.gnb_du_ue_id().gnb_cu_ue_f1ap_id);
++    uint32_t            ue_idx            = f1ap_ue_id_provider.get_ue_index(gnb_cu_ue_f1ap_id);
++    meas_record_item_c  meas_record_item;
++    meas_record_item.set_integer() = int(last_ue_metrics[ue_idx].dl_nof_ok);
++    items.push_back(meas_record_item);
++    meas_collected = true;
++  }
++
++  return meas_collected;
++}
++
++// Custom NokDl
++bool e2sm_kpm_du_meas_provider_impl::get_nok_dl(const asn1::e2sm::label_info_list_l        label_info_list,
++                                              const std::vector<asn1::e2sm::ue_id_c>&      ues,
++                                              const std::optional<asn1::e2sm::cgi_c>       cell_global_id,
++                                              std::vector<asn1::e2sm::meas_record_item_c>& items)
++{
++  bool meas_collected = false;
++  if (last_ue_metrics.empty()) {
++    return handle_no_meas_data_available(ues, items, asn1::e2sm::meas_record_item_c::types::options::integer);
++  }
++  if ((label_info_list.size() > 1 or
++       (label_info_list.size() == 1 and not label_info_list[0].meas_label.no_label_present))) {
++    logger.debug("Metric: NokDl supports only NO_LABEL label.");
++    return meas_collected;
++  }
++
++  if (ues.empty()) {
++    meas_record_item_c meas_record_item;
++    meas_record_item.set_integer() = 0;
++    items.push_back(meas_record_item);
++    meas_collected = true;
++  }
++
++  for (auto& ue : ues) {
++    gnb_cu_ue_f1ap_id_t gnb_cu_ue_f1ap_id = int_to_gnb_cu_ue_f1ap_id(ue.gnb_du_ue_id().gnb_cu_ue_f1ap_id);
++    uint32_t            ue_idx            = f1ap_ue_id_provider.get_ue_index(gnb_cu_ue_f1ap_id);
++    meas_record_item_c  meas_record_item;
++    meas_record_item.set_integer() = int(last_ue_metrics[ue_idx].dl_nof_nok);
++    items.push_back(meas_record_item);
++    meas_collected = true;
++  }
++
++  return meas_collected;
++}
++
++
+ bool e2sm_kpm_du_meas_provider_impl::get_prb_avail_ul(const asn1::e2sm::label_info_list_l          label_info_list,
+                                                       const std::vector<asn1::e2sm::ue_id_c>&      ues,
+                                                       const std::optional<asn1::e2sm::cgi_c>       cell_global_id,
+diff --git a/lib/e2/e2sm/e2sm_kpm/e2sm_kpm_du_meas_provider_impl.h b/lib/e2/e2sm/e2sm_kpm/e2sm_kpm_du_meas_provider_impl.h
+index 394bebb523..e110597af5 100644
+--- a/lib/e2/e2sm/e2sm_kpm/e2sm_kpm_du_meas_provider_impl.h
++++ b/lib/e2/e2sm/e2sm_kpm/e2sm_kpm_du_meas_provider_impl.h
+@@ -100,6 +100,9 @@ private:
+                                       asn1::e2sm::meas_record_item_c::types::options value_type);
+ 
+   // Measurement getter functions.
++  metric_meas_getter_func_t get_mcs_dl; // Custom McsDl
++  metric_meas_getter_func_t get_ok_dl; // Custom OkDl
++  metric_meas_getter_func_t get_nok_dl; // Custom NokDl
+   metric_meas_getter_func_t get_cqi;
+   metric_meas_getter_func_t get_rsrp;
+   metric_meas_getter_func_t get_rsrq;
