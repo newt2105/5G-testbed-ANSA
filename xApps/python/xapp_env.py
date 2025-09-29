@@ -40,7 +40,7 @@ class xAppEnv(gym.Env):
         # Values specific for the use case
         # Got by trial and error, for 10MHz bandwidth
         self.max_throughput = 32000 #30669
-        self.total_prbs = 44
+        self.total_prbs = 52
         self.max_packets = 1000
         self.ues = 2
         self.prb_diff = 3
@@ -51,7 +51,7 @@ class xAppEnv(gym.Env):
         self.xapp_thread.start()
 
     def _process_actions(self):
-        if self.current_episode != 0 and self.current_episode % 1 == 0:
+        if self.current_episode != 0 and self.current_episode % 25 == 0:
             if self.debug:
                 print(f"Updating {self.log_dir}/action.logs")
                 print(self.action_history)
@@ -65,6 +65,7 @@ class xAppEnv(gym.Env):
             self.action_history = Counter({d: 0 for d in range(len(self.prb_pairs))})
 
     def reset(self, seed=None, options=None):
+        self.episode_reward = 0.0  # reset reward cho episode mới
         self.current_step = 0
         self.prbs = [50, 50]
         self._apply_prbs()
@@ -77,7 +78,7 @@ class xAppEnv(gym.Env):
 
     def step(self, action):
         # Action is choosing a pair of prbs and then applying it
-        print("action: ", action)
+        # print("action: ", action)
         self.action_history[action] += 1
         if self.prbs != self.prb_pairs[action].tolist():
             self.prbs = self.prb_pairs[action].tolist()
@@ -92,11 +93,11 @@ class xAppEnv(gym.Env):
             except:
                 break
         kpms = self.kpm_queue.get()
-        print("kpms: ", kpms)
+        # print("kpms: ", kpms)
 
         # Get new state
         self.state = self._decode_kpms(kpms, self.max_throughput, self.total_prbs)
-        print("state: ", self.state)
+        # print("state: ", self.state)
 
         # Reward: Total Throughput + Jain's Fairness Index
         throughputs = [float(x) for x in kpms.split(';')[:self.ues]]
@@ -106,6 +107,7 @@ class xAppEnv(gym.Env):
         r_prbs = sum(applied_prbs) / self.total_prbs
 
         reward = 0.8 * r_thp + 0.2 * r_fair
+        self.episode_reward += reward  # cộng dồn reward
 
         if self.debug and self.current_step % 25 == 0:
             print(f"Reward ({reward:.4f}) -> Thp: {r_thp:.4f}, Fairness: {r_fair:.4f}, PRBs: {r_prbs:.4f} ({applied_prbs})")
@@ -115,6 +117,7 @@ class xAppEnv(gym.Env):
         if self.current_step == self.n_steps:
             self.current_episode += 1
             done = True
+            self._log_episode_reward()  # khi episode kết thúc thì log reward
         
         return self.state, reward, done, False, {}
 
@@ -158,13 +161,18 @@ class xAppEnv(gym.Env):
             return 0.0
         n = len(throughputs)
         return (sum(throughputs) ** 2) / (n * sum(x * x for x in throughputs))
+    def _log_episode_reward(self):
+            log_file = os.path.join(self.log_dir, "rewards.txt")
+            with open(log_file, "a") as f:
+                avg_reward = self.episode_reward / self.n_steps
+                f.write(f"Episode {self.current_episode}: total={self.episode_reward:.4f}, avg={avg_reward:.4f}\n")
 
 if __name__ == "__main__":
     # with granularity period 50, 1000 steps take 50 seconds
     # 150 steps -> 7.5s
     # with 150ms - 1000 steps takes 150 seconds, 2.5min
     algorithm = "DQN"
-    iterations = 1
+    iterations = 300 
     steps = 10
     # In the format: Algorithm-ActivationFunction-p<pi layers>-v<vf layers>
     config_name = f"{algorithm}-Tanh-64x64"
