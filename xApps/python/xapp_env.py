@@ -23,14 +23,14 @@ class xAppEnv(gym.Env):
         # DRL Action + State
         self.current_step = 0
         self.n_steps = n_steps
-        self.observation_space = spaces.Box(low=-1, high=1, shape=(12,), dtype=np.float32)
+        self.observation_space = spaces.Box(low=-1, high=1, shape=(8,), dtype=np.float32)
         self.prb_pairs = np.array([
             [10, 20], [13, 17], [15, 15], [17, 13], [20, 10], # Terrible choices, sums to 30
             [20, 40], [25, 35], [30, 30], [35, 25], [40, 20], # Bad choices, sums to 60
-            [25, 75], [30, 70], [35, 65], [40, 60], [45, 55], [50, 50], [55, 45], [60, 40], [65, 35], [70, 30], [75, 25] # Good choices, sums to 100
+            [30, 70], [40, 60], [50, 50], [60, 40], [70, 30], # Good choices, sums to 100
         ], dtype=np.int32)
         self.action_space = spaces.Discrete(len(self.prb_pairs))
-        self.state = np.zeros(12)
+        self.state = np.zeros(8)
         self.kpm_queue = queue
         self.starting_episode = 1
         self.current_episode = 0
@@ -45,7 +45,6 @@ class xAppEnv(gym.Env):
         self.ues = 2
         self.prb_diff = 3
         self.prbs = [50, 50]
-        self.max_delay = 80000.0 # 126819
 
         self.xapp = xapp
         self.xapp_thread = threading.Thread(target=self.xapp.start)
@@ -71,7 +70,7 @@ class xAppEnv(gym.Env):
         self.prbs = [50, 50]
         self._apply_prbs()
         self._process_actions()
-        self.state = np.zeros(12, dtype=np.float32)
+        self.state = np.zeros(8, dtype=np.float32)
         while not self.kpm_queue.empty():
             # Clear the queue or we'll perform actions based on slightly older KPMs
              self.kpm_queue.get()
@@ -97,36 +96,21 @@ class xAppEnv(gym.Env):
         # print("kpms: ", kpms)
 
         # Get new state
-        self.state = self._decode_kpms(kpms, self.max_throughput, self.total_prbs, self.max_delay)
+        self.state = self._decode_kpms(kpms, self.max_throughput, self.total_prbs)
         # print("state: ", self.state)
 
-        # Reward: Total Throughput + Delay
-        splitted = kpms.split(';')
-        thp_target = 10000   # 10 Mbps 
-        delay_target = 500  # 50 ms
-
-        throughput = self._safe_float(splitted[0])
-        applied_prbs = [int(x) for x in splitted[self.ues:2*self.ues]]
-        delay = self._safe_float(splitted[6*self.ues - 1])
-        # delay_avg = np.mean(delay) if delay else 0.0
-        # thp_avg = np.mean(throughputs) if throughputs else 0.0
-        # r_thp = min(throughput / self.max_throughput, 1.0)
-        # r_fair = self._jain_fairness(throughputs)
+        # Reward: Total Throughput + Jain's Fairness Index
+        throughputs = [float(x) for x in kpms.split(';')[:self.ues]]
+        applied_prbs = [int(x) for x in kpms.split(';')[self.ues:2*self.ues]]
+        r_thp = sum(throughputs) / self.max_throughput
+        r_fair = self._jain_fairness(throughputs)
         r_prbs = sum(applied_prbs) / self.total_prbs
-        # r_delay = max(0.0, 1.0 - delay / delay_target)
 
-        delay_avg = delay
-        thp_avg = throughput
-
-        r_thp = max(-1, min(1, (thp_avg - thp_target) / thp_target))
-
-        r_delay = max(-1, min(1, (delay_target - delay_avg) / delay_target))
-        
-        reward = 0.5 * r_thp + 0.5 * r_delay
+        reward = 0.8 * r_thp + 0.2 * r_fair
         self.episode_reward += reward  # cộng dồn reward
 
         if self.debug and self.current_step % 25 == 0:
-            print(f"Reward ({reward:.4f}) -> Thp: {r_thp:.4f}, Delay: {r_delay:.4f}, PRBs: {r_prbs:.4f} ({applied_prbs})")
+            print(f"Reward ({reward:.4f}) -> Thp: {r_thp:.4f}, Fairness: {r_fair:.4f}, PRBs: {r_prbs:.4f} ({applied_prbs})")
 
         done = False
         self.current_step += 1
@@ -137,7 +121,7 @@ class xAppEnv(gym.Env):
         
         return self.state, reward, done, False, {}
 
-    def _decode_kpms(self, kpms, max_throughput, total_prbs, max_delay):
+    def _decode_kpms(self, kpms, max_throughput, total_prbs):
         splitted = kpms.split(';')
         if self.debug and self.current_step % 25 == 0:
             print(f"Splitted: {splitted}")
@@ -150,20 +134,14 @@ class xAppEnv(gym.Env):
                 max_v = total_prbs
             elif i < 3 * self.ues: # mcs
                 max_v = 28
-            elif i in range(5 * self.ues, 6 * self.ues): # delay
-                max_v = max_delay  # microseconds
 
-            value = self._safe_float(splitted[i])
+            value = float(splitted[i])
             if i < 3 * self.ues: # thp, prbs, mcs
                 st[i] = self._normalize(value, min_v, max_v)
-            elif i in range(3 * self.ues, 5 * self.ues): # lost packets
-                st[i] = self._safe_float(splitted[i+2]) / self._safe_float(splitted[i]) if self._safe_float(splitted[i]) != 0 else 0
+            else: # lost packets
+                st[i] = float(splitted[i+2])/float(splitted[i]) if float(splitted[i]) != 0 else 0
                 if self.debug and self.current_step % 25 == 0:
                     print(f"{st[i] * 100:.4f}% loss")
-
-            if i in range(5 * self.ues, 6 * self.ues): # delay
-                st[i] = self._normalize(value, min_v, max_v)
-
         return st
 
     def _normalize(self, value, min_v, max_v):
@@ -178,14 +156,11 @@ class xAppEnv(gym.Env):
                 print(f"Applying PRBS: {self.prbs[id]} for UE: {id}")
             self.xapp.set_prb(id, self.prbs[id])
 
-    def _safe_float(self, x):
-        try:
-            if x is None or x == '' or str(x).lower() in ['none', 'nan']:
-                return 0.0
-            return float(x)
-        except (ValueError, TypeError):
+    def _jain_fairness(self, throughputs):
+        if sum(throughputs) == 0:
             return 0.0
-
+        n = len(throughputs)
+        return (sum(throughputs) ** 2) / (n * sum(x * x for x in throughputs))
     def _log_episode_reward(self):
             log_file = os.path.join(self.log_dir, "rewards.txt")
             with open(log_file, "a") as f:
@@ -198,7 +173,7 @@ if __name__ == "__main__":
     # with 150ms - 1000 steps takes 150 seconds, 2.5min
     algorithm = "DQN"
     iterations = 300 
-    steps = 50
+    steps = 10
     # In the format: Algorithm-ActivationFunction-p<pi layers>-v<vf layers>
     config_name = f"{algorithm}-Tanh-64x64"
     # Logs
@@ -249,17 +224,17 @@ if __name__ == "__main__":
         model = DQN(
             policy="MlpPolicy",
             env=env,
-            learning_rate=5e-4,
+            learning_rate=1e-3,
             gamma=0.99,
-            batch_size=64,
-            buffer_size=50_000,           # replay buffer
-            learning_starts=2_000,        # warm-up before updates
+            batch_size=32,
+            buffer_size=10_000,           # replay buffer
+            learning_starts=1_000,        # warm-up before updates
             train_freq=4,                # update every 4 env steps
             gradient_steps=1,            # 1 gradient step per training call
-            target_update_interval=2_000,# sync target net every 2k updates
+            target_update_interval=1_000,# sync target net every 1k updates
             exploration_initial_eps=1.0, # ε-greedy: start fully random
-            exploration_fraction=0.1,    # decay ε over first 10% of training
-            exploration_final_eps=0.02,  # final ε
+            exploration_fraction=0.2,    # decay ε over first 20% of training
+            exploration_final_eps=0.05,  # final ε
             tensorboard_log=drl_log,
             verbose=1,
             policy_kwargs=policy_kwargs,
