@@ -118,18 +118,27 @@ class e2sm_rc_module(object):
         payload = self._build_ric_control_request(control_header, control_msg, 1)
         self.parent.rmr_send(e2_node_id, payload, 12040, retries=1)
 
-    def send_control_request_style_2_action_6(self, e2_node_id, ue_id, min_prb_ratio, max_prb_ratio, dedicated_prb_ratio, ack_request=1):
+    def send_control_request_style_2_action_6(self, e2_node_id, ue_id, 
+                                              min_prb_ratio, max_prb_ratio, 
+                                              dedicated_prb_ratio, 
+                                              sst=1, sd=1, 
+                                              ack_request=1):
         plmn_string = "00101"
-        sst = 1
-        sd = 1
+        # sst = 1
+        # sd = 1
 
         # PLMN encoding
         PLMN = plmn_string_to_bcd(plmn_string)
         PLMN = plmn_to_bytes(PLMN)
         # S-NSSAI encoding
-        sst = sst.to_bytes(1, byteorder='big')
-        sd = sd.to_bytes(3, byteorder='big')
-
+        # sst = sst.to_bytes(1, byteorder='big')
+        # sd = sd.to_bytes(3, byteorder='big')
+        sst = int(sst).to_bytes(1, byteorder='big')
+        if isinstance(sd, int):
+            sd = int(sd).to_bytes(3, byteorder='big')
+        elif isinstance(sd, str):
+            sd = int(sd, 16).to_bytes(3, byteorder='big')
+            
         # PRB ratio limits, i.e., [0-100]
         min_prb_ratio = max(0, min(min_prb_ratio, 100))
         max_prb_ratio = max(0, min(max_prb_ratio, 100))
