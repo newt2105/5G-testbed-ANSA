@@ -1,4 +1,5 @@
 import argparse
+import json
 import signal
 from datetime import datetime
 from lib.xAppBase import xAppBase
@@ -54,8 +55,8 @@ class MyXapp(xAppBase):
             rsrq = data.get("RSRQ", [0])
 
             # Tổng hợp lại thành 2 trường
-            total_dl = (used_dl[0] if used_dl else 0) + (avail_dl[0] if used_ul else 0)
-            total_ul = (used_ul[0] if avail_dl else 0) + (avail_ul[0] if avail_ul else 0)
+            total_dl = (used_dl[0] if used_dl else 0) + (avail_dl[0] if used_dl else 0)
+            total_ul = (used_ul[0] if used_ul else 0) + (avail_ul[0] if avail_ul else 0)
 
             fields = {
                 "PRB_TotalDL": total_dl,
@@ -144,8 +145,8 @@ class MyXapp(xAppBase):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, default="")
-    parser.add_argument("--http_server_port", type=int, default=8080)
-    parser.add_argument("--rmr_port", type=int, default=4560)
+    parser.add_argument("--http_server_port", type=int, default=8081)
+    parser.add_argument("--rmr_port", type=int, default=4561)
     parser.add_argument("--e2_node_id", type=str, default="gnbd_001_001_00019b_0")
     parser.add_argument("--ran_func_id", type=int, default=2)
 
