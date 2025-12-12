@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import threading
 import time
 import datetime
 import argparse
@@ -30,8 +31,6 @@ class MonRcApp(xAppBase):
             [20, 40], [25, 35], [30, 30], [35, 25], [40, 20], # Bad choices, sums to 60
             [30, 70], [40, 60], [50, 50], [60, 40], [70, 30], # Good choices, sums to 100        
         ]
-        self.last_apply_time = 0
-        self.apply_interval = 1.5   # 1.5 seconds = safe zone
         self.model = None
         self.log_file = log_file
         self._init_log()
@@ -83,14 +82,6 @@ class MonRcApp(xAppBase):
                 if current != expected_zero:
                     f.write(f"{current}\n")
 
-        # --- Run inference immediately using the new KPM (critical change) ---
-            try:
-                if self.debug:
-                    print("[DEBUG] Running inference immediately from subscription callback")
-                self.run_inference_once()
-            except Exception:
-                print("[ERROR] inference inside callback:")
-
         except Exception:
             print("[ERROR] my_subscription_callback failed:")
 
@@ -109,7 +100,7 @@ class MonRcApp(xAppBase):
         except Exception as e:
             print("[ERROR] set_prb() failed:", e)
 
-    def load_trained_model(self, model_path="/opt/xApps/25-DQN-Tanh-64x64/DQN-Tanh-64x64.zip"):
+    def load_trained_model(self, model_path="/opt/xApps/10-DQN-Tanh-64x64/DQN-Tanh-64x64.zip"):
         if not os.path.isfile(model_path):
             print(f"[WARNING] Model file not found: {model_path}. Inference will not work.")
             self.model = None
@@ -117,17 +108,11 @@ class MonRcApp(xAppBase):
         self.model = DQN.load(model_path)
         print(f"[INFO] Loaded trained model from {model_path}")
 
-    def run_inference_once(self):
+    def run_inference(self):
         if self.model is None:
             if self.debug:
                 print("[DEBUG] No model loaded, skipping inference.")
             return
-        
-        now = time.time()
-        if now - self.last_apply_time < self.apply_interval:
-            return     
-        self.last_apply_time = now
-
         try:
             last_current = self.kpm_queue.get_nowait()
             if self.debug:
@@ -143,7 +128,6 @@ class MonRcApp(xAppBase):
             obs = np.array(values, dtype=np.float32).reshape(1, -1)
             action_raw, _ = self.model.predict(obs, deterministic=True)
             action = int(action_raw) if isinstance(action_raw, (int, np.integer)) else int(action_raw.item())
-
             # Safety check
             if not (0 <= action < len(self.prb_pairs)):
                 print(f"[WARNING] Predicted action {action} out of range, skipping.")
@@ -158,10 +142,21 @@ class MonRcApp(xAppBase):
         except Exception as e:
             print("[ERROR] Interference failed:", e)
 
+    def inference_loop(self):
+        while True:
+            try:
+                self.run_inference()
+            except Exception as e:
+                print("[ERROR] inference_loop:", e)
+            time.sleep(0.15)
+
     @xAppBase.start_function
     def start(self):
-        report_period = 500
-        granul_period = 500
+        report_period = 150
+        granul_period = 150
+        if self.debug:
+            print("[DEBUG] Starting real-time inference loop...")
+        threading.Thread(target=self.inference_loop, daemon=True).start()
         # xApp will use E2SM KPM Report Style 4
         subscription_callback = lambda agent, sub, hdr, msg: self.my_subscription_callback(agent, sub, hdr, msg)
         # dummy matching UE condition to get IDs of all connected UEs
@@ -169,7 +164,7 @@ class MonRcApp(xAppBase):
         if self.debug:
             print("[DEBUG] Subscribe to E2 node ID: {}, RAN func: e2sm_kpm, Report Style: 4, metrics: {}".format(self.e2_node_id, self.metrics))
         self.e2sm_kpm.subscribe_report_service_style_4(self.e2_node_id, report_period, matchingUeConds, self.metrics, granul_period, subscription_callback)
-
+    
     def _init_log(self):
         header = ['UE0_Throughput', 'UE1_Throughput',
                 'UE0_PRBs_Used', 'UE1_PRBs_Used',
@@ -185,7 +180,7 @@ if __name__ == '__main__':
     # Create the xApp
     q = queue.Queue()
     log_file = "/tmp/kpm_log.csv"   # hoặc đường dẫn bạn muốn
-    xApp = MonRcApp(q, log_file, debug=False)   # truyền đủ tham số
+    xApp = MonRcApp(q, log_file, debug=True)   # truyền đủ tham số
     ran_func_id = 2
     xApp.e2sm_kpm.set_ran_func_id(ran_func_id)
     # Load model 
@@ -201,9 +196,3 @@ if __name__ == '__main__':
     xApp.start()
     # Note: xApp will unsubscribe all active subscriptions at exit
     print("[INFO] Starting real-time inference loop...")
-    # Keep process alive (xApp.start may block or return depending on framework).
-    try:
-        while True:
-            time.sleep(1.0)
-    except KeyboardInterrupt:
-        print("Interrupted, exiting.")
